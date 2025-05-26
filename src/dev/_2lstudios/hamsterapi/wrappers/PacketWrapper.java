@@ -2,6 +2,7 @@ package dev._2lstudios.hamsterapi.wrappers;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -9,6 +10,7 @@ import org.bukkit.inventory.ItemStack;
 
 import dev._2lstudios.hamsterapi.HamsterAPI;
 import dev._2lstudios.hamsterapi.enums.PacketType;
+import dev._2lstudios.hamsterapi.utils.NMSItemStackConverter;
 import dev._2lstudios.hamsterapi.utils.Reflection;
 
 public class PacketWrapper {
@@ -94,7 +96,12 @@ public class PacketWrapper {
 
 	public void write(final String key, final Object value) {
 		try {
-			final Field field = this.packet.getClass().getDeclaredField(key);
+			Field field = this.packet.getClass().getDeclaredField(key);
+
+			// Remove the 'final' modifier
+			Field modifiersField = Field.class.getDeclaredField("modifiers");
+			modifiersField.setAccessible(true);
+			modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
 
 			field.setAccessible(true);
 			field.set(packet, value);
@@ -106,13 +113,7 @@ public class PacketWrapper {
 
 	public void write(final String key, final ItemStack itemStack) {
 		try {
-			final Field field = this.packet.getClass().getDeclaredField(key);
-			final Method asNmsCopy = craftItemStackClass.getMethod("asNMSCopy", ItemStack.class);
-			final Object nmsItemStack = asNmsCopy.invoke(null, itemStack);
-
-			field.setAccessible(true);
-			field.set(packet, nmsItemStack);
-			field.setAccessible(false);
+			write(key, NMSItemStackConverter.convertToNMS(itemStack));
 		} catch (final Exception e) {
 			e.printStackTrace();
 		}
