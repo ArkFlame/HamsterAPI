@@ -3,3 +3,4 @@ version: ${version}
 author: 2LStudios
 api-version: 1.13
 main: dev._2lstudios.hamsterapi.HamsterAPI
+folia-supported: true
