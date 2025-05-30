@@ -38,41 +38,39 @@ public class PacketWrapper {
 		this.packet = packet;
 		this.name = packetClass.getSimpleName();
 
-		for (final Field field : packetClass.getDeclaredFields()) {
-			try {
-				field.setAccessible(true);
+		for (Class<?> clazz = packet.getClass(); clazz != null; clazz = clazz.getSuperclass()) {
+		    for (final Field field : clazz.getDeclaredFields()) {
+		        try {
+		            field.setAccessible(true);
+		            final String fieldName = field.getName();
+		            final Object value = field.get(packet);
+		            this.objects.put(fieldName, value);
+		            if (value instanceof String) {
+		                this.strings.put(fieldName, (String) value);
+		            } else if (value instanceof Integer) {
+		                this.integers.put(fieldName, (Integer) value);
+		            } else if (value instanceof Float) {
+		                this.floats.put(fieldName, (Float) value);
+		            } else if (value instanceof Double) {
+		                this.doubles.put(fieldName, (Double) value);
+		            } else if (value instanceof Boolean) {
+		                this.booleans.put(fieldName, (Boolean) value);
+		            } else if (minecraftKeyClass != null && minecraftKeyClass.isInstance(value)) {
+		                this.strings.put(fieldName, value.toString());
+		            }
 
-				final String fieldName = field.getName();
-				final Object value = field.get(packet);
+		            if (itemStackClass.isInstance(value)) {
+		                final Method asBukkitCopy = craftItemStackClass.getMethod("asBukkitCopy", nmsItemStackClass);
+		                final ItemStack itemStack = (ItemStack) asBukkitCopy.invoke(null, value);
+		                this.items.put(fieldName, itemStack);
+		                this.objects.put(fieldName, itemStack);
+		            }
 
-				if (value instanceof String) {
-					this.strings.put(fieldName, (String) value);
-				} else if (value instanceof Integer) {
-					this.integers.put(fieldName, (Integer) value);
-				} else if (value instanceof Float) {
-					this.floats.put(fieldName, (Float) value);
-				} else if (value instanceof Double) {
-					this.doubles.put(fieldName, (Double) value);
-				} else if (value instanceof Boolean) {
-					this.booleans.put(fieldName, (Boolean) value);
-				} else if (minecraftKeyClass != null && minecraftKeyClass.isInstance(value)) {
-					this.strings.put(fieldName, value.toString());
-				}
-
-				if (itemStackClass.isInstance(value)) {
-					final Method asBukkitCopy = craftItemStackClass.getMethod("asBukkitCopy", nmsItemStackClass);
-					final ItemStack itemStack = (ItemStack) asBukkitCopy.invoke(null, value);
-
-					this.items.put(fieldName, itemStack);
-					this.objects.put(fieldName, itemStack);
-				} else {
-					this.objects.put(fieldName, value);
-				}
-
-				field.setAccessible(false);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+		            field.setAccessible(false);
+		        } catch (Exception e) {
+		            e.printStackTrace();
+		        }
+		    }
 		}
 	}
 
