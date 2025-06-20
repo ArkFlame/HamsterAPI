@@ -90,7 +90,6 @@ public class HamsterAPI extends JavaPlugin {
 
 		for (final Player player : server.getOnlinePlayers()) {
 			final HamsterPlayer hamsterPlayer = this.hamsterPlayerManager.add(player);
-
 			hamsterPlayer.tryInject();
 		}
 	}
@@ -101,13 +100,13 @@ public class HamsterAPI extends JavaPlugin {
 
 		for (final Player player : server.getOnlinePlayers()) {
 			final HamsterPlayer hamsterPlayer = this.hamsterPlayerManager.get(player);
-
 			if (hamsterPlayer != null) {
 				hamsterPlayer.uninject();
 			}
-
 			this.hamsterPlayerManager.remove(player);
 		}
+
+        getServer().getMessenger().unregisterOutgoingPluginChannel(this, "BungeeCord");
 	}
 
 	public BufferIO getBufferIO() {

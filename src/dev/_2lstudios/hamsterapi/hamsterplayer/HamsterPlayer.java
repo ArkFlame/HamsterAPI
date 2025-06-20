@@ -175,7 +175,7 @@ public class HamsterPlayer {
 	public void disconnect(final String reason) {
 		final Reflection reflection = hamsterAPI.getReflection();
 		final Server server = hamsterAPI.getServer();
-
+		hamsterAPI.getBungeeMessenger().sendPluginMessage("KickPlayer", player.getName(), reason);
 		try {
 			final Object chatKick = toChatBaseComponent.invoke(null, "{\"text\":\"" + reason + "\"}");
 			final Object packet = reflection.getPacketPlayOutKickDisconnect().getConstructor(iChatBaseComponentClass)
@@ -185,9 +185,6 @@ public class HamsterPlayer {
 		} catch (final Exception e) {
 			hamsterAPI.getLogger().info("Failed to send disconnect packet to player " + player.getName() + "!");
 		}
-
-		hamsterAPI.getBungeeMessenger().sendPluginMessage("kickPlayer", player.getName(), reason);
-
 		closeChannel();
 	}
 
@@ -250,7 +247,7 @@ public class HamsterPlayer {
 			Debug.info("Getting sendPacket method from playerConnection field (" + this.player.getName() + ")");
 			try {
 				this.toChatBaseComponent = iChatBaseComponentClass.getDeclaredClasses()[0].getMethod("a", String.class);
-			} catch (NoSuchMethodException ex) {
+			} catch (Exception ex) {
 				// Unable to get chat component method
 				Debug.crit("Failed to get toChatBaseComponent method. Kick messagges and other won't show up.");
 			}

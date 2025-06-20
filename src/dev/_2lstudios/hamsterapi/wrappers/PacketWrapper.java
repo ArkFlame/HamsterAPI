@@ -97,9 +97,13 @@ public class PacketWrapper {
 			Field field = this.packet.getClass().getDeclaredField(key);
 
 			// Remove the 'final' modifier
-			Field modifiersField = Field.class.getDeclaredField("modifiers");
-			modifiersField.setAccessible(true);
-			modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+			try {
+				Field modifiersField = Field.class.getDeclaredField("modifiers");
+				modifiersField.setAccessible(true);
+				modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+			} catch (Exception e) {
+				// Does not have modifiers, skip
+			}
 
 			field.setAccessible(true);
 			field.set(packet, value);
