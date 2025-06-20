@@ -35,7 +35,11 @@ public class PlayerJoinListener implements Listener {
             logger.warning("Failed to inject player " + player.getName()
                     + " please contact 2LStudios for support about HamsterAPI as this can lead to vulnerabilities.");
             // Retry after 1 tick
-            scheduler.runTaskLater(hamsterAPI, () -> hamsterPlayer.tryInject(), 1);
+            scheduler.runTaskLater(hamsterAPI, () -> {
+                if (player != null && player.isOnline() && hamsterPlayerManager.get(player) != null) {
+                    hamsterPlayer.tryInject();
+                }
+            }, 1);
         }
     }
 }
