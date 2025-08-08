@@ -26,18 +26,27 @@ public class PlayerJoinListener implements Listener {
         this.hamsterAPI = hamsterAPI;
     }
 
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerJoin(final PlayerJoinEvent event) {
         final Player player = event.getPlayer();
         final HamsterPlayer hamsterPlayer = hamsterPlayerManager.add(player);
 
         if (!hamsterPlayer.tryInject()) {
             logger.warning("Failed to inject player " + player.getName()
-                    + " please contact 2LStudios for support about HamsterAPI as this can lead to vulnerabilities.");
+                    + ". Retrying...");
             // Retry after 1 tick
             scheduler.runTaskLater(hamsterAPI, () -> {
                 if (player != null && player.isOnline() && hamsterPlayerManager.get(player) != null) {
-                    hamsterPlayer.tryInject();
+                    if (hamsterPlayer.tryInject()) {
+                        logger.info("Successfully injected player " + player.getName() + " after failing!");
+                    } else {
+                        logger.severe("Failed to inject player " + player.getName() + " after retrying! Please contact ArkFlame Development for support as this can lead to SERVER CRASH!");
+                    }
+                }
+            }, 1);
+            scheduler.runTaskLater(hamsterAPI, () -> {
+                if (player != null && player.isOnline() && hamsterPlayerManager.get(player) != null) {
+                    hamsterPlayer.checkAndReorderHandlers();
                 }
             }, 1);
         }

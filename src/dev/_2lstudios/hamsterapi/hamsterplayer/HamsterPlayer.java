@@ -4,6 +4,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.channels.ClosedChannelException;
+import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 import org.bukkit.Server;
@@ -18,6 +20,7 @@ import dev._2lstudios.hamsterapi.handlers.HamsterDecoderHandler;
 import dev._2lstudios.hamsterapi.utils.Reflection;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.ByteToMessageDecoder;
 
@@ -270,12 +273,14 @@ public class HamsterPlayer {
 			final ByteToMessageDecoder hamsterDecoderHandler = new HamsterDecoderHandler(this);
 			final ChannelDuplexHandler hamsterChannelHandler = new HamsterChannelHandler(this);
 
+			// Inject after compression
 			if (pipeline.get("decompress") != null) {
 				pipeline.addAfter("decompress", HamsterHandler.HAMSTER_DECODER, hamsterDecoderHandler);
 				Debug.info("Added HAMSTER_DECODER in pipeline after decompress (" + this.player.getName() + ")");
+			// Compression not enabled, so inject after splitter
 			} else if (pipeline.get("splitter") != null) {
 				pipeline.addAfter("splitter", HamsterHandler.HAMSTER_DECODER, hamsterDecoderHandler);
-				Debug.info("Added HAMSTER_DECODER in pipeline after spliter (" + this.player.getName() + ")");
+				Debug.info("Added HAMSTER_DECODER in pipeline after splitter (" + this.player.getName() + ")");
 			} else {
 				Debug.crit("No ChannelHandler was found on the pipeline to inject HAMSTER_DECODER ("
 						+ this.player.getName() + ")");
@@ -296,6 +301,82 @@ public class HamsterPlayer {
 			this.injected = true;
 		}
 	}
+
+/**
+ * Periodically verifies that our channel handlers are in the correct position
+ * in the pipeline. If another plugin has injected a handler before ours,
+ * this method will "heal" the pipeline by reordering our handlers back to
+ * their intended, dominant position.
+ *
+ * This should be run a short time after the initial injection (e.g., 20 ticks later)
+ * to ensure priority.
+ */
+public void checkAndReorderHandlers() {
+    // 1. --- Pre-flight Checks ---
+    // Don't do anything if we were never injected or if the player is disconnected.
+    if (!injected || channel == null || !channel.isActive()) {
+        return;
+    }
+
+    try {
+        final ChannelPipeline pipeline = channel.pipeline();
+
+        // 2. --- Verify and Reorder HAMSTER_DECODER ---
+        String decoderBaseName = (pipeline.get("decompress") != null) ? "decompress" : "splitter";
+        reorderHandlerIfNeeded(pipeline, HamsterHandler.HAMSTER_DECODER, decoderBaseName);
+
+        // 3. --- Verify and Reorder HAMSTER_CHANNEL ---
+        String channelBaseName = "decoder";
+        reorderHandlerIfNeeded(pipeline, HamsterHandler.HAMSTER_CHANNEL, channelBaseName);
+
+    } catch (NoSuchElementException e) {
+        // This can happen if a handler was removed while we were iterating. It's safe to ignore.
+        Debug.warn("A handler was removed from the pipeline during reordering for " + this.player.getName() + ". This is usually safe.");
+    } catch (Exception e) {
+        Debug.crit("An unexpected error occurred while reordering pipeline handlers for "
+                + this.player.getName() + ": " + e.getMessage());
+    }
+}
+
+/**
+ * A private helper to check if a handler is correctly positioned right after its base,
+ * and if not, removes and re-adds it.
+ *
+ * @param pipeline The player's channel pipeline.
+ * @param handlerName The name of our handler to check (e.g., "hamster_decoder").
+ * @param baseName The name of the handler it must follow (e.g., "decompress").
+ */
+private void reorderHandlerIfNeeded(final ChannelPipeline pipeline, final String handlerName, final String baseName) {
+    // Get our handler instance and the list of current handler names.
+    final ChannelHandler ourHandler = pipeline.get(handlerName);
+    final List<String> names = pipeline.names();
+
+    // If our handler or its base is missing, we can't do anything.
+    if (ourHandler == null) {
+        Debug.warn("Cannot reorder " + handlerName + " because it is missing from the pipeline for " + this.player.getName());
+        return;
+    }
+    if (pipeline.get(baseName) == null) {
+        Debug.warn("Cannot reorder " + handlerName + " because its base '" + baseName + "' is missing for " + this.player.getName());
+        return;
+    }
+
+    // Find the positions of our handler and its intended base.
+    final int ourHandlerIndex = names.indexOf(handlerName);
+    final int baseHandlerIndex = names.indexOf(baseName);
+
+    // If our handler is not directly after the base, it's out of order.
+    if (ourHandlerIndex != baseHandlerIndex + 1) {
+        Debug.warn(handlerName + " for player " + this.player.getName()
+                + " is out of order. Forcing re-injection to correct position.");
+
+        // Re-inject the handler to its rightful place.
+        pipeline.remove(handlerName);
+        pipeline.addAfter(baseName, handlerName, ourHandler);
+
+        Debug.info(handlerName + " was successfully reordered for " + this.player.getName());
+    }
+}
 
 	// Injects but instead of returning an exception returns sucess (Boolean)
 	public boolean tryInject() {
