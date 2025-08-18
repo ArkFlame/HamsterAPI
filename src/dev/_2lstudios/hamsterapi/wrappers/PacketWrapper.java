@@ -13,6 +13,10 @@ import dev._2lstudios.hamsterapi.enums.PacketType;
 import dev._2lstudios.hamsterapi.utils.NMSItemStackConverter;
 import dev._2lstudios.hamsterapi.utils.Reflection;
 
+// The Unsafe import is required for the bypass.
+// IDEs will correctly warn that this is a restricted internal API.
+import sun.misc.Unsafe;
+
 public class PacketWrapper {
 	private final Class<?> craftItemStackClass;
 	private final Class<?> nmsItemStackClass;
@@ -26,6 +30,24 @@ public class PacketWrapper {
 	private final Map<String, Boolean> booleans = new HashMap<>();
 	private final Map<String, ItemStack> items = new HashMap<>();
 	private final Map<String, Object> objects = new HashMap<>();
+
+	private static final Unsafe unsafe;
+
+	/**
+	 * Static initializer to get the instance of sun.misc.Unsafe.
+	 * This is the cornerstone of the bypass, providing direct memory access.
+	 */
+	static {
+		try {
+			Field f = Unsafe.class.getDeclaredField("theUnsafe");
+			f.setAccessible(true);
+			unsafe = (Unsafe) f.get(null);
+		} catch (Exception e) {
+			// If Unsafe is not available, this class cannot perform its core function.
+			// Throwing a RuntimeException is appropriate as this is a critical failure.
+			throw new RuntimeException("Unable to acquire sun.misc.Unsafe instance", e);
+		}
+	}
 
 	public PacketWrapper(final Object packet) {
 		final Reflection reflection = HamsterAPI.getInstance().getReflection();
@@ -68,7 +90,7 @@ public class PacketWrapper {
 
 		            field.setAccessible(false);
 		        } catch (Exception e) {
-		            e.printStackTrace();
+					// Graceful as requested
 		        }
 		    }
 		}
@@ -92,24 +114,74 @@ public class PacketWrapper {
 		return null;
 	}
 
+	/**
+	 * Writes a value to a field by its name, bypassing 'final' and module
+	 * access restrictions.
+	 *
+	 * It first attempts a standard reflection-based final modifier removal. If that
+	 * fails (as it does on Java 9+), it falls back to using sun.misc.Unsafe
+	 * for direct memory manipulation.
+	 *
+	 * @param key   The name of the field to modify.
+	 * @param value The new value for the field.
+	 */
 	public void write(final String key, final Object value) {
 		try {
-			Field field = this.packet.getClass().getDeclaredField(key);
+			// Search for the field in the class and its superclasses to support inheritance
+			Field field = null;
+			Class<?> currentClass = this.packet.getClass();
+			while (currentClass != null) {
+				try {
+					field = currentClass.getDeclaredField(key);
+					break; // Field found, exit the loop
+				} catch (NoSuchFieldException e) {
+					// Field not in this class, move to the superclass
+					currentClass = currentClass.getSuperclass();
+				}
+			}
 
-			// Remove the 'final' modifier
+			if (field == null) {
+				// Field does not exist in the class hierarchy, do nothing.
+				return;
+			}
+
+			// First, attempt the "old way" which might work on older Java versions or for non-final fields.
 			try {
+				field.setAccessible(true);
 				Field modifiersField = Field.class.getDeclaredField("modifiers");
 				modifiersField.setAccessible(true);
 				modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-			} catch (Exception e) {
-				// Does not have modifiers, skip
-			}
+				field.set(this.packet, value);
+			} catch (Exception standardReflectionFailed) {
+				// If the standard way fails, fall back to the extreme Unsafe bypass.
+				// This is expected on modern Java versions (9+).
+				long offset = unsafe.objectFieldOffset(field);
 
-			field.setAccessible(true);
-			field.set(packet, value);
-			field.setAccessible(false);
+				// Use the correct "put" method based on the value's type.
+				if (value instanceof Boolean) {
+					unsafe.putBoolean(this.packet, offset, (Boolean) value);
+				} else if (value instanceof Byte) {
+					unsafe.putByte(this.packet, offset, (Byte) value);
+				} else if (value instanceof Short) {
+					unsafe.putShort(this.packet, offset, (Short) value);
+				} else if (value instanceof Integer) {
+					unsafe.putInt(this.packet, offset, (Integer) value);
+				} else if (value instanceof Long) {
+					unsafe.putLong(this.packet, offset, (Long) value);
+				} else if (value instanceof Float) {
+					unsafe.putFloat(this.packet, offset, (Float) value);
+				} else if (value instanceof Double) {
+					unsafe.putDouble(this.packet, offset, (Double) value);
+				} else if (value instanceof Character) {
+					unsafe.putChar(this.packet, offset, (Character) value);
+				} else {
+					// For all other Object types
+					unsafe.putObject(this.packet, offset, value);
+				}
+			}
 		} catch (final Exception e) {
-			e.printStackTrace();
+			// Graceful: If any part of the process fails, the write operation is
+			// aborted silently without crashing.
 		}
 	}
 
@@ -117,7 +189,7 @@ public class PacketWrapper {
 		try {
 			write(key, NMSItemStackConverter.convertToNMS(itemStack));
 		} catch (final Exception e) {
-			e.printStackTrace();
+			// Graceful as requested
 		}
 	}
 
