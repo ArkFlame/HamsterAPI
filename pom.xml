@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>dev._2lstudios</groupId>
   <artifactId>HamsterAPI</artifactId>
-  <version>0.2.6</version>
+  <version>0.2.7</version>
   <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
