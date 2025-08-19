@@ -4,91 +4,100 @@ import org.bukkit.Bukkit;
 import org.bukkit.inventory.ItemStack;
 
 import java.lang.reflect.Method;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * A utility class to convert between Bukkit ItemStacks and their internal
  * NMS (net.minecraft.server) counterparts.
- * This class uses reflection to remain compatible across different Minecraft versions.
+ * This class is designed to fail gracefully on incompatible server versions.
  */
 public class NMSItemStackConverter {
 
-    private static final Class<?> CRAFT_ITEM_STACK_CLASS;
-    private static final Class<?> NMS_ITEM_STACK_CLASS;
-    private static final Method AS_NMS_COPY_METHOD;
-    private static final Method AS_BUKKIT_COPY_METHOD;
+    private static Method AS_NMS_COPY_METHOD;
+    private static Method AS_BUKKIT_COPY_METHOD;
+    private static boolean enabled = false;
 
     static {
+        // Use a dedicated logger for clarity
+        Logger logger = Bukkit.getLogger();
+
         try {
-            // Find the CraftItemStack class, which is the bridge between Bukkit and NMS.
-            // It can exist in a versioned package path, so we check that first.
-            String version = getServerVersion();
-            String craftItemStackPath = "org.bukkit.craftbukkit." + version + ".inventory.CraftItemStack";
-            CRAFT_ITEM_STACK_CLASS = Class.forName(craftItemStackPath);
+            // Get the server's package name to determine the version structure.
+            // Legacy (e.g., 1.16.5): "org.bukkit.craftbukkit.v1_16_R5"
+            // Modern (e.g., 1.17+): "org.bukkit.craftbukkit"
+            String serverPackageName = Bukkit.getServer().getClass().getPackage().getName();
+            String[] parts = serverPackageName.split("\\.");
+            
+            String version = "";
+            // Check if the package name contains a version string (legacy servers).
+            if (parts.length == 4) {
+                version = parts[3];
+            }
 
-            // Get the method to convert a Bukkit ItemStack TO an NMS ItemStack.
-            // Signature: public static net.minecraft.world.item.ItemStack asNMSCopy(org.bukkit.inventory.ItemStack)
-            AS_NMS_COPY_METHOD = CRAFT_ITEM_STACK_CLASS.getMethod("asNMSCopy", ItemStack.class);
+            // Construct the path to CraftItemStack dynamically.
+            // The version string will be empty for modern servers, resulting in the correct path.
+            String craftItemStackPath = "org.bukkit.craftbukkit." + 
+                                       (version.isEmpty() ? "" : version + ".") + 
+                                       "inventory.CraftItemStack";
 
-            // We can determine the NMS ItemStack class from the return type of the asNMSCopy method.
-            // This is more reliable than guessing the class path.
-            NMS_ITEM_STACK_CLASS = AS_NMS_COPY_METHOD.getReturnType();
+            Class<?> craftItemStackClass = Class.forName(craftItemStackPath);
+            
+            // Get the method to convert a Bukkit ItemStack to an NMS ItemStack
+            AS_NMS_COPY_METHOD = craftItemStackClass.getMethod("asNMSCopy", ItemStack.class);
+            
+            // Determine the NMS ItemStack class from the return type of the first method
+            Class<?> nmsItemStackClass = AS_NMS_COPY_METHOD.getReturnType();
+            
+            // Get the method to convert an NMS ItemStack back to a Bukkit ItemStack
+            AS_BUKKIT_COPY_METHOD = craftItemStackClass.getMethod("asBukkitCopy", nmsItemStackClass);
 
-            // Now get the method to convert an NMS ItemStack BACK TO a Bukkit ItemStack.
-            // Signature: public static org.bukkit.inventory.ItemStack asBukkitCopy(net.minecraft.world.item.ItemStack)
-            AS_BUKKIT_COPY_METHOD = CRAFT_ITEM_STACK_CLASS.getMethod("asBukkitCopy", NMS_ITEM_STACK_CLASS);
+            // If all reflection succeeds, enable the converter.
+            enabled = true;
+            logger.log(Level.INFO, "[HamsterAPI] NMSItemStackConverter initialized successfully for server version: " + (version.isEmpty() ? "1.17+" : version));
 
         } catch (Exception e) {
-            // If any of these critical reflection steps fail, the utility is unusable.
-            // Throw a runtime exception to indicate a severe setup error.
-            throw new RuntimeException("NMSItemStackConverter failed to initialize. Your server version may not be compatible.", e);
+            // DO NOT THROW AN EXCEPTION HERE!
+            // Instead, log a warning and leave the converter disabled.
+            logger.log(Level.WARNING, 
+                "[HamsterAPI] NMSItemStackConverter could not be initialized. " + 
+                "This is likely due to an incompatible server version or fork. " +
+                "ItemStack conversion in packets will be disabled."
+            );
+            // Optionally print the stack trace for deep debugging, but it's not essential for the user.
+            e.printStackTrace();
         }
     }
 
     /**
      * Converts a Bukkit ItemStack to its NMS counterpart.
-     *
-     * @param bukkitItem The Bukkit ItemStack to convert.
-     * @return The corresponding NMS ItemStack as an Object, or null if conversion fails.
+     * Returns null if the converter is disabled or if conversion fails.
      */
     public static Object convertToNMS(ItemStack bukkitItem) {
-        if (bukkitItem == null) {
+        // If initialization failed, or the item is null, do nothing.
+        if (!enabled || bukkitItem == null) {
             return null;
         }
         try {
-            // Invokes the static method: CraftItemStack.asNMSCopy(bukkitItem)
             return AS_NMS_COPY_METHOD.invoke(null, bukkitItem);
         } catch (Exception e) {
-            // Graceful failure
-            return null;
+            return null; // Graceful failure on a per-call basis
         }
     }
 
     /**
      * Converts an NMS ItemStack object back to a Bukkit ItemStack.
-     *
-     * @param nmsItem The NMS ItemStack (as an Object) to convert.
-     * @return The corresponding Bukkit ItemStack, or null if conversion fails.
+     * Returns null if the converter is disabled or if conversion fails.
      */
     public static ItemStack convertToBukkit(Object nmsItem) {
-        if (nmsItem == null) {
+        // If initialization failed, or the item is null, do nothing.
+        if (!enabled || nmsItem == null) {
             return null;
         }
         try {
-            // Invokes the static method: CraftItemStack.asBukkitCopy(nmsItem)
             return (ItemStack) AS_BUKKIT_COPY_METHOD.invoke(null, nmsItem);
         } catch (Exception e) {
-            // Graceful failure
-            return null;
+            return null; // Graceful failure on a per-call basis
         }
-    }
-
-    /**
-     * Gets the server's version string used in package names (e.g., "v1_18_R2").
-     *
-     * @return The version package string.
-     */
-    private static String getServerVersion() {
-        String packageName = Bukkit.getServer().getClass().getPackage().getName();
-        return packageName.substring(packageName.lastIndexOf('.') + 1);
     }
 }
