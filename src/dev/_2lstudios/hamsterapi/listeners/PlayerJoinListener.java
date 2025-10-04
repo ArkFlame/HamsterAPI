@@ -34,7 +34,7 @@ public class PlayerJoinListener implements Listener {
         if (!hamsterPlayer.tryInject()) {
             logger.warning("Failed to inject player " + player.getName()
                     + ". Retrying...");
-            // Retry after 1 tick
+            // Retry after 5 ticks
             scheduler.runTaskLater(hamsterAPI, () -> {
                 if (player != null && player.isOnline() && hamsterPlayerManager.get(player) != null) {
                     if (hamsterPlayer.tryInject()) {
@@ -43,12 +43,12 @@ public class PlayerJoinListener implements Listener {
                         logger.severe("Failed to inject player " + player.getName() + " after retrying! Please contact ArkFlame Development for support as this can lead to SERVER CRASH!");
                     }
                 }
-            }, 1);
+            }, 5L);
             scheduler.runTaskLater(hamsterAPI, () -> {
                 if (player != null && player.isOnline() && hamsterPlayerManager.get(player) != null) {
                     hamsterPlayer.checkAndReorderHandlers();
                 }
-            }, 1);
+            }, 10L);
         }
     }
 }
