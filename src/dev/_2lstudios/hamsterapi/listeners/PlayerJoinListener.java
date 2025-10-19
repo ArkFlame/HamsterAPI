@@ -7,23 +7,19 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.scheduler.BukkitScheduler;
 
 import dev._2lstudios.hamsterapi.HamsterAPI;
 import dev._2lstudios.hamsterapi.hamsterplayer.HamsterPlayer;
 import dev._2lstudios.hamsterapi.hamsterplayer.HamsterPlayerManager;
+import dev._2lstudios.hamsterapi.utils.FoliaAPI;
 
 public class PlayerJoinListener implements Listener {
     private final Logger logger;
     private final HamsterPlayerManager hamsterPlayerManager;
-    private final BukkitScheduler scheduler;
-    private final HamsterAPI hamsterAPI;
 
     public PlayerJoinListener(final HamsterAPI hamsterAPI) {
         this.logger = hamsterAPI.getLogger();
         this.hamsterPlayerManager = hamsterAPI.getHamsterPlayerManager();
-        this.scheduler = hamsterAPI.getServer().getScheduler();
-        this.hamsterAPI = hamsterAPI;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -35,7 +31,7 @@ public class PlayerJoinListener implements Listener {
             logger.warning("Failed to inject player " + player.getName()
                     + ". Retrying...");
             // Retry after 5 ticks
-            scheduler.runTaskLater(hamsterAPI, () -> {
+            FoliaAPI.runTaskAsync(() -> {
                 if (player != null && player.isOnline() && hamsterPlayerManager.get(player) != null) {
                     if (hamsterPlayer.tryInject()) {
                         logger.info("Successfully injected player " + player.getName() + " after failing!");
@@ -44,7 +40,7 @@ public class PlayerJoinListener implements Listener {
                     }
                 }
             }, 5L);
-            scheduler.runTaskLater(hamsterAPI, () -> {
+            FoliaAPI.runTaskAsync(() -> {
                 if (player != null && player.isOnline() && hamsterPlayerManager.get(player) != null) {
                     hamsterPlayer.checkAndReorderHandlers();
                 }
