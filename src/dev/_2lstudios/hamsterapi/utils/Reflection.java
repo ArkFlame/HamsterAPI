@@ -10,7 +10,8 @@ public class Reflection {
 	private final String version;
 	// Cache for Class.forName(String) lookups
 	private final Map<String, Class<?>> classes = new HashMap<>();
-	// Cache for resolved NMS/OBC classes to avoid repeated string manipulation and lookups
+	// Cache for resolved NMS/OBC classes to avoid repeated string manipulation and
+	// lookups
 	private final Map<String, Class<?>> minecraftClassCache = new HashMap<>();
 	private final Map<String, Class<?>> craftBukkitClassCache = new HashMap<>();
 	// Cache for reflected fields
@@ -43,7 +44,7 @@ public class Reflection {
 
 		return value;
 	}
-	
+
 	/**
 	 * Converts a string with legacy color codes (&) into an IChatBaseComponent.
 	 * This method is version-independent, trying the modern method first and
@@ -53,8 +54,10 @@ public class Reflection {
 	 * @return The IChatBaseComponent object, or null if conversion fails.
 	 */
 	public Object toChatBaseComponent(String text) {
-		// This method seems complex but is likely not the memory bottleneck unless called
-		// extremely frequently with unique strings. The main issue is the class lookups.
+		// This method seems complex but is likely not the memory bottleneck unless
+		// called
+		// extremely frequently with unique strings. The main issue is the class
+		// lookups.
 		// No changes needed here based on the profiler.
 		if (text == null) {
 			return null;
@@ -77,7 +80,8 @@ public class Reflection {
 		} catch (Exception e) {
 			try {
 				Class<?> iChatBaseComponentClass = getIChatBaseComponent();
-				if (iChatBaseComponentClass == null) return null;
+				if (iChatBaseComponentClass == null)
+					return null;
 
 				Class<?> chatSerializerClass = null;
 				for (Class<?> nestedClass : iChatBaseComponentClass.getDeclaredClasses()) {
@@ -109,8 +113,9 @@ public class Reflection {
 			}
 		}
 	}
-	
-	// This method's caching logic is already implemented correctly. No changes needed.
+
+	// This method's caching logic is already implemented correctly. No changes
+	// needed.
 	public Object getField(final Object object, final Class<?> fieldType, final int number)
 			throws IllegalAccessException {
 		if (object == null) {
@@ -121,9 +126,10 @@ public class Reflection {
 		}
 
 		final Class<?> objectClass = object.getClass();
-		final Map<Class<?>, Map<Integer, Field>> typeFields = classFields.computeIfAbsent(objectClass, k -> new HashMap<>());
+		final Map<Class<?>, Map<Integer, Field>> typeFields = classFields.computeIfAbsent(objectClass,
+				k -> new HashMap<>());
 		final Map<Integer, Field> fields = typeFields.computeIfAbsent(fieldType, k -> new HashMap<>());
-		
+
 		if (fields.containsKey(number)) {
 			return getValue(fields.get(number), object);
 		}
@@ -154,11 +160,12 @@ public class Reflection {
 	// --- OPTIMIZED METHODS ---
 
 	private Class<?> getMinecraftClass(String key) {
-		// Use computeIfAbsent to check cache, compute and store if absent, all in one go.
+		// Use computeIfAbsent to check cache, compute and store if absent, all in one
+		// go.
 		return minecraftClassCache.computeIfAbsent(key, k -> {
 			final int lastDot = k.lastIndexOf(".");
 			final String lastKey = k.substring(lastDot > 0 ? lastDot + 1 : 0);
-			
+
 			// Try modern (1.17+) package structure first
 			Class<?> newClass = getClass("net.minecraft." + k);
 			if (newClass != null) {
@@ -175,7 +182,7 @@ public class Reflection {
 		return craftBukkitClassCache.computeIfAbsent(key, k -> {
 			final int lastDot = k.lastIndexOf(".");
 			final String lastKey = k.substring(lastDot > 0 ? lastDot + 1 : 0);
-			
+
 			// Try newest package structure (e.g., 1.20.6+)
 			Class<?> newestClass = getClass("org.bukkit.craftbukkit." + k);
 			if (newestClass != null) {
@@ -193,7 +200,8 @@ public class Reflection {
 		});
 	}
 
-	// All the following methods will now be extremely fast and allocate no new objects
+	// All the following methods will now be extremely fast and allocate no new
+	// objects
 	// after the first call, thanks to the caching in the methods they call.
 
 	public Class<?> getItemStack() {
@@ -262,5 +270,11 @@ public class Reflection {
 
 	public Class<?> getCraftItemStack() {
 		return getCraftBukkitClass("inventory.CraftItemStack");
+	}
+
+	public Class<?> getClientboundDisconnectPacket() {
+		// In 1.20.5 and 1.21+, the disconnect packet was moved to the "common" protocol
+		// package.
+		return getMinecraftClass("network.protocol.common.ClientboundDisconnectPacket");
 	}
 }

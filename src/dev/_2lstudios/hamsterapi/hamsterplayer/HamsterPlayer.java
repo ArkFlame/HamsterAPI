@@ -186,6 +186,7 @@ public class HamsterPlayer {
 	}
 
 	// Disconnect the HamsterPlayer with packets
+// Disconnect the HamsterPlayer with packets
 	public void disconnect(final String reason) {
 		final Reflection reflection = hamsterAPI.getReflection();
 		hamsterAPI.getBungeeMessenger().sendPluginMessage("KickPlayer", player.getName(), reason);
@@ -198,16 +199,27 @@ public class HamsterPlayer {
 				closeChannel();
 				return;
 			}
-			final Class<?> packetPlayOutKickDisconnect = reflection.getPacketPlayOutKickDisconnect();
-			if (packetPlayOutKickDisconnect == null) {
+
+			// 1. Try to get the legacy/standard kick packet (Prior to 1.20.5)
+			Class<?> packetClass = reflection.getPacketPlayOutKickDisconnect();
+
+			// 2. If null, try the modern 1.20.5+ / 1.21+ class (ClientboundDisconnectPacket)
+			// This packet was moved from 'game' to 'common' protocol.
+			if (packetClass == null) {
+				packetClass = reflection.getClientboundDisconnectPacket();
+			}
+
+			if (packetClass == null) {
 				if (Debug.isEnabled()) {
 					hamsterAPI.getLogger()
-							.severe("Failed to get PacketPlayOutKickDisconnect class. Cannot kick.");
+							.severe("Failed to get disconnect packet class (checked Legacy and Modern 1.21+). Cannot kick.");
 				}
 				closeChannel();
 				return;
 			}
-			Object packet = packetPlayOutKickDisconnect.getConstructor(iChatBaseComponentClass)
+
+			// The constructor signature remains the same (takes IChatBaseComponent)
+			Object packet = packetClass.getConstructor(iChatBaseComponentClass)
 					.newInstance(chatKick);
 			sendPacket(packet);
 		} catch (final Exception e) {
