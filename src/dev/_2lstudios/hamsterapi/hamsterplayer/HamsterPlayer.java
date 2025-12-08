@@ -198,8 +198,16 @@ public class HamsterPlayer {
 				closeChannel();
 				return;
 			}
-
-			final Object packet = reflection.getPacketPlayOutKickDisconnect().getConstructor(iChatBaseComponentClass)
+			final Class<?> packetPlayOutKickDisconnect = reflection.getPacketPlayOutKickDisconnect();
+			if (packetPlayOutKickDisconnect == null) {
+				if (Debug.isEnabled()) {
+					hamsterAPI.getLogger()
+							.severe("Failed to get PacketPlayOutKickDisconnect class. Cannot kick.");
+				}
+				closeChannel();
+				return;
+			}
+			Object packet = packetPlayOutKickDisconnect.getConstructor(iChatBaseComponentClass)
 					.newInstance(chatKick);
 			sendPacket(packet);
 		} catch (final Exception e) {
