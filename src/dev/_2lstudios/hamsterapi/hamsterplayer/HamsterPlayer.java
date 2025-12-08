@@ -299,29 +299,36 @@ public class HamsterPlayer {
 			final ByteToMessageDecoder hamsterDecoderHandler = new HamsterDecoderHandler(this);
 			final ChannelDuplexHandler hamsterChannelHandler = new HamsterChannelHandler(this);
 
-			// Inject after compression
-			if (pipeline.get("decompress") != null) {
-				pipeline.addAfter("decompress", HamsterHandler.HAMSTER_DECODER, hamsterDecoderHandler);
-				Debug.info("Added HAMSTER_DECODER in pipeline after decompress (" + this.player.getName() + ")");
-			// Compression not enabled, so inject after splitter
-			} else if (pipeline.get("splitter") != null) {
-				pipeline.addAfter("splitter", HamsterHandler.HAMSTER_DECODER, hamsterDecoderHandler);
-				Debug.info("Added HAMSTER_DECODER in pipeline after splitter (" + this.player.getName() + ")");
-			} else {
-				Debug.crit("No ChannelHandler was found on the pipeline to inject HAMSTER_DECODER ("
-						+ this.player.getName() + ")");
-				throw new IllegalAccessException(
-						"No ChannelHandler was found on the pipeline to inject " + HamsterHandler.HAMSTER_DECODER);
+			if (pipeline.get(HamsterHandler.HAMSTER_DECODER) == null) {
+				// Inject after compression
+				if (pipeline.get("decompress") != null) {
+					pipeline.addAfter("decompress", HamsterHandler.HAMSTER_DECODER, hamsterDecoderHandler);
+					Debug.info("Added HAMSTER_DECODER in pipeline after decompress (" + this.player.getName() + ")");
+				// Compression not enabled, so inject after splitter
+				} else if (pipeline.get("splitter") != null) {
+					pipeline.addAfter("splitter", HamsterHandler.HAMSTER_DECODER, hamsterDecoderHandler);
+					Debug.info("Added HAMSTER_DECODER in pipeline after splitter (" + this.player.getName() + ")");
+				} else {
+					Debug.crit("No ChannelHandler was found on the pipeline to inject HAMSTER_DECODER ("
+							+ this.player.getName() + ") Available: " + pipeline.names());
+					throw new IllegalAccessException(
+							"No ChannelHandler was found on the pipeline to inject " + HamsterHandler.HAMSTER_DECODER);
+				}
 			}
 
-			if (pipeline.get("decoder") != null) {
-				pipeline.addAfter("decoder", HamsterHandler.HAMSTER_CHANNEL, hamsterChannelHandler);
-				Debug.info("Added HAMSTER_CHANNEL in pipeline after decoder (" + this.player.getName() + ")");
-			} else {
-				Debug.crit("No ChannelHandler was found on the pipeline to inject HAMSTER_CHANNEL ("
-						+ this.player.getName() + ")");
-				throw new IllegalAccessException(
-						"No ChannelHandler was found on the pipeline to inject " + hamsterChannelHandler);
+			if (pipeline.get(HamsterHandler.HAMSTER_CHANNEL) == null) {
+				if (pipeline.get("decoder") != null) {
+					pipeline.addAfter("decoder", HamsterHandler.HAMSTER_CHANNEL, hamsterChannelHandler);
+					Debug.info("Added HAMSTER_CHANNEL in pipeline after decoder (" + this.player.getName() + ")");
+				} else if (pipeline.get("packet_handler") != null) {
+					pipeline.addBefore("packet_handler", HamsterHandler.HAMSTER_CHANNEL, hamsterChannelHandler);
+					Debug.info("Added HAMSTER_CHANNEL in pipeline before packet_handler (" + this.player.getName() + ")");
+				} else {
+					Debug.crit("No ChannelHandler was found on the pipeline to inject HAMSTER_CHANNEL ("
+							+ this.player.getName() + ") Available: " + pipeline.names());
+					throw new IllegalAccessException(
+							"No ChannelHandler was found on the pipeline to inject " + hamsterChannelHandler);
+				}
 			}
 
 			this.injected = true;
