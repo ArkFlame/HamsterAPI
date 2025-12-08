@@ -49,7 +49,8 @@ public class HamsterPlayer {
 			final Reflection reflection = hamsterAPI.getReflection();
 			// Use the new, version-independent method to create a chat component
 			final Object chatAction = reflection.toChatBaseComponent(text);
-			if (chatAction == null) return;
+			if (chatAction == null)
+				return;
 
 			final Object packet = reflection.getPacketPlayOutChat().getConstructor(iChatBaseComponentClass, byte.class)
 					.newInstance(chatAction, (byte) 2);
@@ -66,7 +67,8 @@ public class HamsterPlayer {
 			final Reflection reflection = hamsterAPI.getReflection();
 			// Use the new, version-independent method to create a chat component
 			final Object chatAction = reflection.toChatBaseComponent(text);
-			if (chatAction == null) return;
+			if (chatAction == null)
+				return;
 
 			final Class<?> chatMessageTypeClass = reflection.getChatMessageType();
 			final Object[] enumConstants = chatMessageTypeClass.getEnumConstants();
@@ -89,7 +91,8 @@ public class HamsterPlayer {
 			try {
 				sendActionbarPacketOld(text);
 			} catch (final Exception e2) {
-				hamsterAPI.getLogger().warning("Failed to send any actionbar packet to player " + player.getName() + "!");
+				hamsterAPI.getLogger()
+						.warning("Failed to send any actionbar packet to player " + player.getName() + "!");
 			}
 		}
 	}
@@ -101,7 +104,8 @@ public class HamsterPlayer {
 
 			final Object chatTitle = reflection.toChatBaseComponent(title);
 			final Object chatSubTitle = reflection.toChatBaseComponent(subtitle);
-			if (chatTitle == null || chatSubTitle == null) return;
+			if (chatTitle == null || chatSubTitle == null)
+				return;
 
 			final Class<?> enumTitleActionClass = reflection.getPacketPlayOutTitle().getDeclaredClasses()[0];
 			final Constructor<?> titleConstructor = reflection.getPacketPlayOutTitle().getConstructor(
@@ -132,13 +136,15 @@ public class HamsterPlayer {
 			final Object timingPacket = timingTitleConstructor.newInstance(fadeInTime, showTime, fadeOutTime);
 
 			final Object chatTitle = reflection.toChatBaseComponent(title);
-			if (chatTitle == null) return;
+			if (chatTitle == null)
+				return;
 			final Constructor<?> titleConstructor = reflection.getClientboundSetTitleTextPacket()
 					.getConstructor(iChatBaseComponentClass);
 			final Object titlePacket = titleConstructor.newInstance(chatTitle);
 
 			final Object chatSubTitle = reflection.toChatBaseComponent(subtitle);
-			if (chatSubTitle == null) return;
+			if (chatSubTitle == null)
+				return;
 			final Constructor<?> subTitleConstructor = reflection.getClientboundSetSubtitleTextPacket()
 					.getConstructor(iChatBaseComponentClass);
 			final Object subTitlePacket = subTitleConstructor.newInstance(chatSubTitle);
@@ -187,16 +193,19 @@ public class HamsterPlayer {
 			// Use the new, version-independent method to create a chat component
 			final Object chatKick = reflection.toChatBaseComponent(reason);
 			if (chatKick == null) {
-				hamsterAPI.getLogger().severe("Failed to create kick component for " + player.getName() + ". Cannot kick.");
+				hamsterAPI.getLogger()
+						.severe("Failed to create kick component for " + player.getName() + ". Cannot kick.");
 				closeChannel();
 				return;
 			}
 
 			final Object packet = reflection.getPacketPlayOutKickDisconnect().getConstructor(iChatBaseComponentClass)
 					.newInstance(chatKick);
-
 			sendPacket(packet);
 		} catch (final Exception e) {
+			if (Debug.isEnabled()) {
+				e.printStackTrace();
+			}
 			hamsterAPI.getLogger().info("Failed to send disconnect packet to player " + player.getName() + "!");
 		}
 		closeChannel();
@@ -208,6 +217,9 @@ public class HamsterPlayer {
 		} catch (final Exception e) {
 			// Don't spam console if the error is just the channel being closed.
 			if (!(e.getCause() instanceof ClosedChannelException)) {
+				if (Debug.isEnabled()) {
+					e.printStackTrace();
+				}
 				hamsterAPI.getLogger().info("Failed to send packet to player " + player.getName() + "!");
 			}
 		}
@@ -268,16 +280,19 @@ public class HamsterPlayer {
 			}
 
 			// In 1.18+, the method is named "a", in older versions it's "sendPacket".
-			// Note: The method signature also changed. This logic checks for the new name first.
+			// Note: The method signature also changed. This logic checks for the new name
+			// first.
 			try {
 				this.sendPacketMethod = this.playerConnection.getClass().getMethod("a", reflection.getPacket());
 				Debug.info("Found modern 'a(Packet)' sendPacket method (" + this.player.getName() + ")");
 			} catch (NoSuchMethodException e) {
-				this.sendPacketMethod = this.playerConnection.getClass().getMethod("sendPacket", reflection.getPacket());
+				this.sendPacketMethod = this.playerConnection.getClass().getMethod("sendPacket",
+						reflection.getPacket());
 				Debug.info("Found legacy 'sendPacket(Packet)' method (" + this.player.getName() + ")");
 			}
 
-			// The 'toChatBaseComponent' method is now handled entirely inside the Reflection class.
+			// The 'toChatBaseComponent' method is now handled entirely inside the
+			// Reflection class.
 			// No need to set it up here anymore.
 
 			this.setup = true;
@@ -304,7 +319,7 @@ public class HamsterPlayer {
 				if (pipeline.get("decompress") != null) {
 					pipeline.addAfter("decompress", HamsterHandler.HAMSTER_DECODER, hamsterDecoderHandler);
 					Debug.info("Added HAMSTER_DECODER in pipeline after decompress (" + this.player.getName() + ")");
-				// Compression not enabled, so inject after splitter
+					// Compression not enabled, so inject after splitter
 				} else if (pipeline.get("splitter") != null) {
 					pipeline.addAfter("splitter", HamsterHandler.HAMSTER_DECODER, hamsterDecoderHandler);
 					Debug.info("Added HAMSTER_DECODER in pipeline after splitter (" + this.player.getName() + ")");
@@ -322,7 +337,8 @@ public class HamsterPlayer {
 					Debug.info("Added HAMSTER_CHANNEL in pipeline after decoder (" + this.player.getName() + ")");
 				} else if (pipeline.get("packet_handler") != null) {
 					pipeline.addBefore("packet_handler", HamsterHandler.HAMSTER_CHANNEL, hamsterChannelHandler);
-					Debug.info("Added HAMSTER_CHANNEL in pipeline before packet_handler (" + this.player.getName() + ")");
+					Debug.info(
+							"Added HAMSTER_CHANNEL in pipeline before packet_handler (" + this.player.getName() + ")");
 				} else {
 					Debug.crit("No ChannelHandler was found on the pipeline to inject HAMSTER_CHANNEL ("
 							+ this.player.getName() + ") Available: " + pipeline.names());
@@ -341,7 +357,8 @@ public class HamsterPlayer {
 	 * this method will "heal" the pipeline by reordering our handlers back to
 	 * their intended, dominant position.
 	 *
-	 * This should be run a short time after the initial injection (e.g., 20 ticks later)
+	 * This should be run a short time after the initial injection (e.g., 20 ticks
+	 * later)
 	 * to ensure priority.
 	 */
 	public void checkAndReorderHandlers() {
@@ -363,8 +380,10 @@ public class HamsterPlayer {
 			reorderHandlerIfNeeded(pipeline, HamsterHandler.HAMSTER_CHANNEL, channelBaseName);
 
 		} catch (NoSuchElementException e) {
-			// This can happen if a handler was removed while we were iterating. It's safe to ignore.
-			Debug.warn("A handler was removed from the pipeline during reordering for " + this.player.getName() + ". This is usually safe.");
+			// This can happen if a handler was removed while we were iterating. It's safe
+			// to ignore.
+			Debug.warn("A handler was removed from the pipeline during reordering for " + this.player.getName()
+					+ ". This is usually safe.");
 		} catch (Exception e) {
 			Debug.crit("An unexpected error occurred while reordering pipeline handlers for "
 					+ this.player.getName() + ": " + e.getMessage());
@@ -372,25 +391,31 @@ public class HamsterPlayer {
 	}
 
 	/**
-	 * A private helper to check if a handler is correctly positioned right after its base,
+	 * A private helper to check if a handler is correctly positioned right after
+	 * its base,
 	 * and if not, removes and re-adds it.
 	 *
-	 * @param pipeline The player's channel pipeline.
-	 * @param handlerName The name of our handler to check (e.g., "hamster_decoder").
-	 * @param baseName The name of the handler it must follow (e.g., "decompress").
+	 * @param pipeline    The player's channel pipeline.
+	 * @param handlerName The name of our handler to check (e.g.,
+	 *                    "hamster_decoder").
+	 * @param baseName    The name of the handler it must follow (e.g.,
+	 *                    "decompress").
 	 */
-	private void reorderHandlerIfNeeded(final ChannelPipeline pipeline, final String handlerName, final String baseName) {
+	private void reorderHandlerIfNeeded(final ChannelPipeline pipeline, final String handlerName,
+			final String baseName) {
 		// Get our handler instance and the list of current handler names.
 		final ChannelHandler ourHandler = pipeline.get(handlerName);
 		final List<String> names = pipeline.names();
 
 		// If our handler or its base is missing, we can't do anything.
 		if (ourHandler == null) {
-			Debug.warn("Cannot reorder " + handlerName + " because it is missing from the pipeline for " + this.player.getName());
+			Debug.warn("Cannot reorder " + handlerName + " because it is missing from the pipeline for "
+					+ this.player.getName());
 			return;
 		}
 		if (pipeline.get(baseName) == null) {
-			Debug.warn("Cannot reorder " + handlerName + " because its base '" + baseName + "' is missing for " + this.player.getName());
+			Debug.warn("Cannot reorder " + handlerName + " because its base '" + baseName + "' is missing for "
+					+ this.player.getName());
 			return;
 		}
 
