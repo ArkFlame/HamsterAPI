@@ -38,6 +38,7 @@ public class PacketWrapper {
 	private Map<String, Double> doublesCache;
 	private Map<String, Float> floatsCache;
 	private Map<String, Long> longsCache;
+	private Map<String, byte[]> byteArraysCache;
 	private Map<String, ItemStack> itemsCache;
 	private Map<String, Object> objectsCache;
 
@@ -258,6 +259,18 @@ public class PacketWrapper {
 			} catch (IllegalAccessException ignored) {}
 		}
 		return this.longsCache = results;
+	}
+	
+	public Map<String, byte[]> getByteArrays() {
+		if (this.byteArraysCache != null) return this.byteArraysCache;
+		final Map<String, byte[]> results = new HashMap<>();
+		for (final Field field : getClassFields().values()) {
+			try {
+				Object value = field.get(this.packet);
+				if (value instanceof byte[]) results.put(field.getName(), (byte[]) value);
+			} catch (IllegalAccessException ignored) {}
+		}
+		return this.byteArraysCache = results;
 	}
 
 	public Map<String, ItemStack> getItems() {
