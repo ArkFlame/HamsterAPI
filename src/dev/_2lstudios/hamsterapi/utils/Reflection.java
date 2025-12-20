@@ -249,7 +249,20 @@ public class Reflection {
 	}
 
 	public Class<?> getPlayerConnection() {
-		return getMinecraftClass("server.network.PlayerConnection");
+		// 1. Try the original legacy/Spigot location first
+		Class<?> clazz = getMinecraftClass("server.network.PlayerConnection");
+
+		// 2. Fallback to 1.21.11+ modern implementation (Found in diagnostic)
+		if (clazz == null) {
+			clazz = getMinecraftClass("server.network.ServerGamePacketListenerImpl");
+		}
+
+		// 3. Fallback to 1.21.x common superclass (Found in diagnostic)
+		if (clazz == null) {
+			clazz = getMinecraftClass("server.network.ServerCommonPacketListenerImpl");
+		}
+
+		return clazz;
 	}
 
 	public Class<?> getClientboundSetTitlesAnimationPacket() {
