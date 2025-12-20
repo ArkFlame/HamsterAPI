@@ -282,7 +282,7 @@ public class HamsterPlayer {
 		if (!setup) {
 			final Reflection reflection = hamsterAPI.getReflection();
 			final Object handle = player.getClass().getMethod("getHandle").invoke(player);
-			Debug.info("Invoked player getHandle (" + this.player.getName() + ")");
+			Debug.info("Invoked player getHandle (" + this.player.getName() + ") and got: " + handle);
 
 			this.playerConnection = reflection.getField(handle, reflection.getPlayerConnection());
 			Debug.info("Getting playerConection field (" + this.player.getName() + ")");
