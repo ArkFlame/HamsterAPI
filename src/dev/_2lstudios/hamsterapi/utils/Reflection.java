@@ -221,7 +221,15 @@ public class Reflection {
 	}
 
 	public Class<?> getNetworkManager() {
-		return getMinecraftClass("network.NetworkManager");
+		// Try legacy/standard name first
+		Class<?> clazz = getMinecraftClass("network.NetworkManager");
+
+		// Fallback for 1.21.11+ (Mojang mapped name)
+		if (clazz == null) {
+			clazz = getMinecraftClass("network.Connection");
+		}
+
+		return clazz;
 	}
 
 	public Class<?> getPacketDataSerializer() {

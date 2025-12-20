@@ -285,10 +285,10 @@ public class HamsterPlayer {
 			Debug.info("Invoked player getHandle (" + this.player.getName() + ") and got: " + handle);
 
 			this.playerConnection = reflection.getField(handle, reflection.getPlayerConnection());
-			Debug.info("Getting playerConection field (" + this.player.getName() + ")");
+			Debug.info("Getting playerConnection field for " + this.player.getName() + ": " + playerConnection);
 
 			this.networkManager = reflection.getField(playerConnection, reflection.getNetworkManager());
-			Debug.info("Getting networkManager field (" + this.player.getName() + ")");
+			Debug.info("Getting networkManager field for " + this.player.getName() + ": " + networkManager);
 
 			this.channel = (Channel) reflection.getField(networkManager, Channel.class);
 			Debug.info("Getting Channel from networkManager field (" + this.player.getName() + ")");
