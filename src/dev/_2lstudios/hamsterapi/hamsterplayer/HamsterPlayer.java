@@ -186,7 +186,7 @@ public class HamsterPlayer {
 	}
 
 	// Disconnect the HamsterPlayer with packets
-// Disconnect the HamsterPlayer with packets
+	// Disconnect the HamsterPlayer with packets
 	public void disconnect(final String reason) {
 		final Reflection reflection = hamsterAPI.getReflection();
 		hamsterAPI.getBungeeMessenger().sendPluginMessage("KickPlayer", player.getName(), reason);
@@ -203,7 +203,8 @@ public class HamsterPlayer {
 			// 1. Try to get the legacy/standard kick packet (Prior to 1.20.5)
 			Class<?> packetClass = reflection.getPacketPlayOutKickDisconnect();
 
-			// 2. If null, try the modern 1.20.5+ / 1.21+ class (ClientboundDisconnectPacket)
+			// 2. If null, try the modern 1.20.5+ / 1.21+ class
+			// (ClientboundDisconnectPacket)
 			// This packet was moved from 'game' to 'common' protocol.
 			if (packetClass == null) {
 				packetClass = reflection.getClientboundDisconnectPacket();
@@ -277,52 +278,34 @@ public class HamsterPlayer {
 	}
 
 	// Sets variables to simplify packet handling and inject
-public void setup()
-        throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, NoSuchFieldException {
-    if (!setup) {
-        final Reflection reflection = hamsterAPI.getReflection();
-        final Object handle = player.getClass().getMethod("getHandle").invoke(player);
-        
-        this.playerConnection = reflection.getField(handle, reflection.getPlayerConnection());
-        this.networkManager = reflection.getField(playerConnection, reflection.getNetworkManager());
-        this.channel = (Channel) reflection.getField(networkManager, Channel.class);
-        this.iChatBaseComponentClass = reflection.getIChatBaseComponent();
+	public void setup()
+			throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, NoSuchFieldException {
+		if (!setup) {
+			final Reflection reflection = hamsterAPI.getReflection();
+			final Object handle = player.getClass().getMethod("getHandle").invoke(player);
 
-        if (this.iChatBaseComponentClass == null) {
-            throw new IllegalStateException("IChatBaseComponent class not found via reflection.");
-        }
+			this.playerConnection = reflection.getField(handle, reflection.getPlayerConnection());
+			this.networkManager = reflection.getField(playerConnection, reflection.getNetworkManager());
+			this.channel = (Channel) reflection.getField(networkManager, Channel.class);
+			this.iChatBaseComponentClass = reflection.getIChatBaseComponent();
 
-        // --- FIXED PACKET METHOD LOGIC ---
-        Class<?> packetClass = reflection.getPacket();
-        String[] methodNames = {"send", "a", "sendPacket"}; // 'send' is for 1.21.11+
-        
-        for (String name : methodNames) {
-            try {
-                this.sendPacketMethod = this.playerConnection.getClass().getMethod(name, packetClass);
-                break; // Found it!
-            } catch (NoSuchMethodException ignored) {}
-        }
+			if (this.iChatBaseComponentClass == null) {
+				throw new IllegalStateException("IChatBaseComponent class not found via reflection.");
+			}
 
-        // --- DIAGNOSTIC FALLBACK ---
-        // If names didn't work, iterate all methods to find one that accepts exactly one Packet parameter
-        if (this.sendPacketMethod == null) {
-            System.err.println("[HamsterAPI-Diagnostic] Could not find sendPacket by name. Searching by parameter type...");
-            for (java.lang.reflect.Method m : this.playerConnection.getClass().getMethods()) {
-                if (m.getParameterCount() == 1 && m.getParameterTypes()[0].equals(packetClass)) {
-                    this.sendPacketMethod = m;
-                    System.out.println("[HamsterAPI-Diagnostic] FOUND via diagnostic: " + m.getName() + "(" + packetClass.getSimpleName() + ")");
-                    break;
-                }
-            }
-        }
+			// --- FIXED PACKET METHOD LOGIC ---
+			this.sendPacketMethod = reflection.getSendPacketMethod(this.playerConnection.getClass());
 
-        if (this.sendPacketMethod == null) {
-            throw new NoSuchMethodException("Could not find a valid packet sending method in " + this.playerConnection.getClass().getName());
-        }
+			if (this.sendPacketMethod == null) {
+				throw new NoSuchMethodException("Could not find a valid packet sending method in "
+						+ this.playerConnection.getClass().getName());
+			}
 
-        this.setup = true;
-    }
-}
+			this.setup = true;
+
+			this.setup = true;
+		}
+	}
 
 	// Injects handlers to the player pipeline with NMS
 	public void inject() throws IllegalAccessException, InvocationTargetException, NoSuchMethodException,

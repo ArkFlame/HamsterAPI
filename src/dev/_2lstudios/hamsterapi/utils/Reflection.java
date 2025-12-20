@@ -16,6 +16,8 @@ public class Reflection {
 	private final Map<String, Class<?>> craftBukkitClassCache = new HashMap<>();
 	// Cache for reflected fields
 	private final Map<Class<?>, Map<Class<?>, Map<Integer, Field>>> classFields = new HashMap<>();
+	// Cache for reflected methods (Class -> Method)
+	private final Map<Class<?>, java.lang.reflect.Method> sendPacketMethodCache = new HashMap<>();
 
 	public Reflection(final String version) {
 		this.version = version;
@@ -303,5 +305,36 @@ public class Reflection {
 		// In 1.20.5 and 1.21+, the disconnect packet was moved to the "common" protocol
 		// package.
 		return getMinecraftClass("network.protocol.common.ClientboundDisconnectPacket");
+	}
+
+	public java.lang.reflect.Method getSendPacketMethod(Class<?> connectionClass) {
+		return sendPacketMethodCache.computeIfAbsent(connectionClass, clazz -> {
+			Class<?> packetClass = getPacket();
+			if (packetClass == null || clazz == null)
+				return null;
+
+			// 1. Try known names (send = 1.21.11+, a = 1.18-1.21, sendPacket = legacy)
+			String[] names = { "send", "a", "sendPacket" };
+			for (String name : names) {
+				try {
+					return clazz.getMethod(name, packetClass);
+				} catch (NoSuchMethodException ignored) {
+				}
+			}
+
+			// 2. Diagnostic Fallback: Search by parameter type (Packet)
+			// This is cached, so it only runs once per connection class type.
+			for (java.lang.reflect.Method m : clazz.getMethods()) {
+				if (m.getParameterCount() == 1 && m.getParameterTypes()[0].equals(packetClass)) {
+					// Ignore generic Object methods like equals()
+					if (m.getName().equals("equals"))
+						continue;
+
+					return m;
+				}
+			}
+
+			return null;
+		});
 	}
 }
