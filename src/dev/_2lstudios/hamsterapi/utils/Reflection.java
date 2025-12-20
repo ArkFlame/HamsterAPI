@@ -241,7 +241,13 @@ public class Reflection {
 	}
 
 	public Class<?> getIChatBaseComponent() {
-		return getMinecraftClass("network.chat.IChatBaseComponent");
+		Class<?> clazz = getMinecraftClass("network.chat.IChatBaseComponent");
+
+		if (clazz == null) {
+			clazz = getMinecraftClass("network.chat.Component");
+		}
+
+		return clazz;
 	}
 
 	public Class<?> getPacketPlayOutKickDisconnect() {
