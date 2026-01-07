@@ -98,7 +98,7 @@ public class HamsterPlayer {
 	}
 
 	public void sendTitlePacketOld(final String title, final String subtitle, final int fadeInTime, final int showTime,
-			final int fadeOutTime) {
+								   final int fadeOutTime) {
 		try {
 			final Reflection reflection = hamsterAPI.getReflection();
 
@@ -107,7 +107,9 @@ public class HamsterPlayer {
 			if (chatTitle == null || chatSubTitle == null)
 				return;
 
-			final Class<?> enumTitleActionClass = reflection.getPacketPlayOutTitle().getDeclaredClasses()[0];
+			final Class<?>[] declaredClasses = reflection.getPacketPlayOutTitle().getDeclaredClasses();
+			if (declaredClasses.length == 0) return;
+			final Class<?> enumTitleActionClass = declaredClasses[0];
 			final Constructor<?> titleConstructor = reflection.getPacketPlayOutTitle().getConstructor(
 					enumTitleActionClass,
 					iChatBaseComponentClass, int.class, int.class, int.class);
@@ -127,7 +129,7 @@ public class HamsterPlayer {
 	}
 
 	public void sendTitlePacketNew(final String title, final String subtitle, final int fadeInTime, final int showTime,
-			final int fadeOutTime) {
+								   final int fadeOutTime) {
 		try {
 			final Reflection reflection = hamsterAPI.getReflection();
 
@@ -160,7 +162,7 @@ public class HamsterPlayer {
 
 	// Sends a Title to the HamsterPlayer
 	public void sendTitle(final String title, final String subtitle, final int fadeInTime, final int showTime,
-			final int fadeOutTime) {
+						  final int fadeOutTime) {
 		try {
 			sendTitlePacketNew(title, subtitle, fadeInTime, showTime, fadeOutTime);
 		} catch (final Exception e1) {
@@ -408,7 +410,7 @@ public class HamsterPlayer {
 	 *                    "decompress").
 	 */
 	private void reorderHandlerIfNeeded(final ChannelPipeline pipeline, final String handlerName,
-			final String baseName) {
+										final String baseName) {
 		// Get our handler instance and the list of current handler names.
 		final ChannelHandler ourHandler = pipeline.get(handlerName);
 		final List<String> names = pipeline.names();
