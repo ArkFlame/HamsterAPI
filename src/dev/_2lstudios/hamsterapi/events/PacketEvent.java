@@ -1,11 +1,10 @@
 package dev._2lstudios.hamsterapi.events;
 
+import dev._2lstudios.hamsterapi.hamsterplayer.HamsterPlayer;
+import io.netty.channel.ChannelHandlerContext;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
-
-import dev._2lstudios.hamsterapi.hamsterplayer.HamsterPlayer;
-import io.netty.channel.ChannelHandlerContext;
 
 class PacketEvent extends Event implements Cancellable {
     private static final HandlerList handlers = new HandlerList();

@@ -2,12 +2,10 @@ package dev._2lstudios.hamsterapi.messengers;
 
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
-
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
-
 import dev._2lstudios.hamsterapi.HamsterAPI;
 import dev._2lstudios.hamsterapi.utils.BukkitUtils;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 
 public class BungeeMessenger {
 	private final HamsterAPI instance;

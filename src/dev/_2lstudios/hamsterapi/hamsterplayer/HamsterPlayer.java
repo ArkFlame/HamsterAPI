@@ -1,19 +1,7 @@
 package dev._2lstudios.hamsterapi.hamsterplayer;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.nio.channels.ClosedChannelException;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.UUID;
-
-import org.bukkit.Server;
-import org.bukkit.entity.Player;
-
 import dev._2lstudios.hamsterapi.Debug;
 import dev._2lstudios.hamsterapi.HamsterAPI;
-import dev._2lstudios.hamsterapi.Version;
 import dev._2lstudios.hamsterapi.enums.HamsterHandler;
 import dev._2lstudios.hamsterapi.handlers.HamsterChannelHandler;
 import dev._2lstudios.hamsterapi.handlers.HamsterDecoderHandler;
@@ -23,6 +11,15 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.ByteToMessageDecoder;
+import org.bukkit.entity.Player;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.nio.channels.ClosedChannelException;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.UUID;
 
 public class HamsterPlayer {
 	private final Player player;

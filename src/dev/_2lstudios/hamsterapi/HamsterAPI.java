@@ -1,15 +1,5 @@
 package dev._2lstudios.hamsterapi;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.util.Properties;
-
-import org.bukkit.Server;
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.PluginManager;
-import org.bukkit.plugin.java.JavaPlugin;
-
 import dev._2lstudios.hamsterapi.hamsterplayer.HamsterPlayer;
 import dev._2lstudios.hamsterapi.hamsterplayer.HamsterPlayerManager;
 import dev._2lstudios.hamsterapi.listeners.PlayerJoinListener;
@@ -17,6 +7,15 @@ import dev._2lstudios.hamsterapi.listeners.PlayerQuitListener;
 import dev._2lstudios.hamsterapi.messengers.BungeeMessenger;
 import dev._2lstudios.hamsterapi.utils.BufferIO;
 import dev._2lstudios.hamsterapi.utils.Reflection;
+import org.bukkit.Server;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.PluginManager;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.util.Properties;
 
 public class HamsterAPI extends JavaPlugin {
 	private static HamsterAPI instance;

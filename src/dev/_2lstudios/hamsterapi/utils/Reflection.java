@@ -1,10 +1,10 @@
 package dev._2lstudios.hamsterapi.utils;
 
+import org.bukkit.ChatColor;
+
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.bukkit.ChatColor;
 
 public class Reflection {
 	private final String version;

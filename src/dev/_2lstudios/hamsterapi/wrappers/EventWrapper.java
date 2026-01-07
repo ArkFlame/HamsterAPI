@@ -1,12 +1,11 @@
 package dev._2lstudios.hamsterapi.wrappers;
 
-import org.bukkit.entity.Player;
-import org.bukkit.event.Cancellable;
-
 import dev._2lstudios.hamsterapi.hamsterplayer.HamsterPlayer;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
+import org.bukkit.entity.Player;
+import org.bukkit.event.Cancellable;
 
 public class EventWrapper implements Cancellable {
 	private final PacketWrapper packet;

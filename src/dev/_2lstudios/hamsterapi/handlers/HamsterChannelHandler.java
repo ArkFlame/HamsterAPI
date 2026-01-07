@@ -1,8 +1,5 @@
 package dev._2lstudios.hamsterapi.handlers;
 
-import org.bukkit.Server;
-import org.bukkit.plugin.PluginManager;
-
 import dev._2lstudios.hamsterapi.events.PacketReceiveEvent;
 import dev._2lstudios.hamsterapi.events.PacketSendEvent;
 import dev._2lstudios.hamsterapi.hamsterplayer.HamsterPlayer;
@@ -10,6 +7,8 @@ import dev._2lstudios.hamsterapi.wrappers.PacketWrapper;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import org.bukkit.Server;
+import org.bukkit.plugin.PluginManager;
 
 public class HamsterChannelHandler extends ChannelDuplexHandler {
 	private final Server server;

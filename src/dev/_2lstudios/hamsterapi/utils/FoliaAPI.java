@@ -1,12 +1,6 @@
 package dev._2lstudios.hamsterapi.utils;
 
-import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.function.Consumer;
-
+import dev._2lstudios.hamsterapi.HamsterAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Server;
@@ -16,7 +10,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitScheduler;
 
-import dev._2lstudios.hamsterapi.HamsterAPI;
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 public class FoliaAPI {
     private static Map<String, Method> cachedMethods = new HashMap<>();
