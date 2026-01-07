@@ -302,8 +302,6 @@ public class HamsterPlayer {
 			}
 
 			this.setup = true;
-
-			this.setup = true;
 		}
 	}
 
