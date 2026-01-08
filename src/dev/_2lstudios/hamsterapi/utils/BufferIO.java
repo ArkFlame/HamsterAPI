@@ -1,11 +1,5 @@
 package dev._2lstudios.hamsterapi.utils;
 
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.zip.DataFormatException;
-import java.util.zip.Inflater;
-
 import dev._2lstudios.hamsterapi.wrappers.PacketWrapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -13,6 +7,12 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderException;
 import io.netty.util.AttributeKey;
+
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.zip.DataFormatException;
+import java.util.zip.Inflater;
 
 public class BufferIO {
 	private final Class<?> packetDataSerializerClass, networkManagerClass, enumProtocolClass,

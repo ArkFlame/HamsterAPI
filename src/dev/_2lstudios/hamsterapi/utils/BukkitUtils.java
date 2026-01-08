@@ -1,9 +1,9 @@
 package dev._2lstudios.hamsterapi.utils;
 
-import java.util.Collection;
-
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+
+import java.util.Collection;
 
 public class BukkitUtils {
 	public static Player getRandomPlayer() {

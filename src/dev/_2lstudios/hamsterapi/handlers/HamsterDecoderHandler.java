@@ -1,16 +1,15 @@
 package dev._2lstudios.hamsterapi.handlers;
 
-import java.util.List;
-
-import org.bukkit.Server;
-import org.bukkit.plugin.PluginManager;
-
 import dev._2lstudios.hamsterapi.events.PacketDecodeEvent;
 import dev._2lstudios.hamsterapi.hamsterplayer.HamsterPlayer;
 import dev._2lstudios.hamsterapi.wrappers.ByteBufWrapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
+import org.bukkit.Server;
+import org.bukkit.plugin.PluginManager;
+
+import java.util.List;
 
 public class HamsterDecoderHandler extends ByteToMessageDecoder {
 	private final Server server;
