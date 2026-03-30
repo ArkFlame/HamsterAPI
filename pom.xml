@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>dev._2lstudios</groupId>
   <artifactId>HamsterAPI</artifactId>
-  <version>0.3.5</version>
+  <version>0.3.6</version>
   <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
@@ -10,6 +10,7 @@
   <build>
     <finalName>${project.artifactId}</finalName>
     <sourceDirectory>src</sourceDirectory>
+    <testSourceDirectory>src/test/java</testSourceDirectory>
     <resources>
       <resource>
         <filtering>true</filtering>
@@ -26,6 +27,9 @@
         <configuration>
           <source>1.8</source>
           <target>1.8</target>
+          <excludes>
+            <exclude>test/java/**/*.java</exclude>
+          </excludes>
         </configuration>
       </plugin>
     </plugins>
@@ -47,6 +51,12 @@
       <groupId>io.netty</groupId>
       <artifactId>netty-all</artifactId>
       <version>4.1.68.Final</version>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.13.2</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>
