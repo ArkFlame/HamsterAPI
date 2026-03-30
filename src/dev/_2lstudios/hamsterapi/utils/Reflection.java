@@ -3,21 +3,22 @@ package dev._2lstudios.hamsterapi.utils;
 import org.bukkit.ChatColor;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Reflection {
 	private final String version;
 	// Cache for Class.forName(String) lookups
-	private final Map<String, Class<?>> classes = new HashMap<>();
+	private final Map<String, Optional<Class<?>>> classes = new ConcurrentHashMap<>();
 	// Cache for resolved NMS/OBC classes to avoid repeated string manipulation and
 	// lookups
-	private final Map<String, Class<?>> minecraftClassCache = new HashMap<>();
-	private final Map<String, Class<?>> craftBukkitClassCache = new HashMap<>();
+	private final Map<String, Optional<Class<?>>> minecraftClassCache = new ConcurrentHashMap<>();
+	private final Map<String, Optional<Class<?>>> craftBukkitClassCache = new ConcurrentHashMap<>();
 	// Cache for reflected fields
-	private final Map<Class<?>, Map<Class<?>, Map<Integer, Field>>> classFields = new HashMap<>();
+	private final Map<Class<?>, Map<Class<?>, Map<Integer, Field>>> classFields = new ConcurrentHashMap<>();
 	// Cache for reflected methods (Class -> Method)
-	private final Map<Class<?>, java.lang.reflect.Method> sendPacketMethodCache = new HashMap<>();
+	private final Map<Class<?>, Optional<java.lang.reflect.Method>> sendPacketMethodCache = new ConcurrentHashMap<>();
 
 	public Reflection(final String version) {
 		this.version = version;
@@ -25,15 +26,15 @@ public class Reflection {
 
 	// This method is fine, it already caches its results.
 	public Class<?> getClass(final String className) {
-		// Use computeIfAbsent for a more concise and thread-safe-friendly approach
-		return this.classes.computeIfAbsent(className, key -> {
-			try {
-				return Class.forName(key);
-			} catch (final ClassNotFoundException e) {
-				// Return null if not found, which will be cached.
-				return null;
-			}
-		});
+		return this.classes.computeIfAbsent(className, this::resolveClass).orElse(null);
+	}
+
+	private Optional<Class<?>> resolveClass(final String className) {
+		try {
+			return Optional.of(Class.forName(className));
+		} catch (final ClassNotFoundException e) {
+			return Optional.empty();
+		}
 	}
 
 	private Object getValue(final Field field, final Object object)
@@ -129,11 +130,13 @@ public class Reflection {
 
 		final Class<?> objectClass = object.getClass();
 		final Map<Class<?>, Map<Integer, Field>> typeFields = classFields.computeIfAbsent(objectClass,
-				k -> new HashMap<>());
-		final Map<Integer, Field> fields = typeFields.computeIfAbsent(fieldType, k -> new HashMap<>());
+				k -> new ConcurrentHashMap<Class<?>, Map<Integer, Field>>());
+		final Map<Integer, Field> fields = typeFields.computeIfAbsent(fieldType,
+				k -> new ConcurrentHashMap<Integer, Field>());
 
-		if (fields.containsKey(number)) {
-			return getValue(fields.get(number), object);
+		final Field cachedField = fields.get(number);
+		if (cachedField != null) {
+			return getValue(cachedField, object);
 		}
 
 		int index = 0;
@@ -162,44 +165,52 @@ public class Reflection {
 	// --- OPTIMIZED METHODS ---
 
 	private Class<?> getMinecraftClass(String key) {
-		// Use computeIfAbsent to check cache, compute and store if absent, all in one
-		// go.
-		return minecraftClassCache.computeIfAbsent(key, k -> {
-			final int lastDot = k.lastIndexOf(".");
-			final String lastKey = k.substring(lastDot > 0 ? lastDot + 1 : 0);
+		return minecraftClassCache.computeIfAbsent(key, this::resolveMinecraftClass).orElse(null);
+	}
 
-			// Try modern (1.17+) package structure first
-			Class<?> newClass = getClass("net.minecraft." + k);
-			if (newClass != null) {
-				return newClass;
-			}
+	private Optional<Class<?>> resolveMinecraftClass(final String key) {
+		final int lastDot = key.lastIndexOf(".");
+		final String lastKey = key.substring(lastDot > 0 ? lastDot + 1 : 0);
 
-			// Fallback to legacy (pre-1.17) versioned package structure
-			return getClass("net.minecraft.server." + this.version + "." + lastKey);
-		});
+		Class<?> resolvedClass = getClass("net.minecraft." + key);
+		if (resolvedClass != null) {
+			return Optional.of(resolvedClass);
+		}
+
+		if (this.version == null) {
+			return Optional.empty();
+		}
+
+		resolvedClass = getClass("net.minecraft.server." + this.version + "." + lastKey);
+		return Optional.ofNullable(resolvedClass);
 	}
 
 	private Class<?> getCraftBukkitClass(String key) {
-		// Same optimization pattern for CraftBukkit classes
-		return craftBukkitClassCache.computeIfAbsent(key, k -> {
-			final int lastDot = k.lastIndexOf(".");
-			final String lastKey = k.substring(lastDot > 0 ? lastDot + 1 : 0);
+		return craftBukkitClassCache.computeIfAbsent(key, this::resolveCraftBukkitClass).orElse(null);
+	}
 
-			// Try newest package structure (e.g., 1.20.6+)
-			Class<?> newestClass = getClass("org.bukkit.craftbukkit." + k);
-			if (newestClass != null) {
-				return newestClass;
+	private Optional<Class<?>> resolveCraftBukkitClass(final String key) {
+		final int lastDot = key.lastIndexOf(".");
+		final String lastKey = key.substring(lastDot > 0 ? lastDot + 1 : 0);
+
+		Class<?> resolvedClass = getClass("org.bukkit.craftbukkit." + key);
+		if (resolvedClass != null) {
+			return Optional.of(resolvedClass);
+		}
+
+		if (this.version != null) {
+			resolvedClass = getClass("org.bukkit.craftbukkit." + this.version + "." + key);
+			if (resolvedClass != null) {
+				return Optional.of(resolvedClass);
 			}
 
-			// Try new-ish package structure (e.g., 1.17+)
-			Class<?> newClass = getClass("org.bukkit.craftbukkit." + this.version + "." + k);
-			if (newClass != null) {
-				return newClass;
+			resolvedClass = getClass("org.bukkit.craftbukkit." + this.version + "." + lastKey);
+			if (resolvedClass != null) {
+				return Optional.of(resolvedClass);
 			}
+		}
 
-			// Fallback to legacy versioned package structure
-			return getClass("org.bukkit.craftbukkit." + this.version + "." + lastKey);
-		});
+		return Optional.empty();
 	}
 
 	// All the following methods will now be extremely fast and allocate no new
@@ -308,33 +319,38 @@ public class Reflection {
 	}
 
 	public java.lang.reflect.Method getSendPacketMethod(Class<?> connectionClass) {
-		return sendPacketMethodCache.computeIfAbsent(connectionClass, clazz -> {
-			Class<?> packetClass = getPacket();
-			if (packetClass == null || clazz == null)
-				return null;
-
-			// 1. Try known names (send = 1.21.11+, a = 1.18-1.21, sendPacket = legacy)
-			String[] names = { "send", "a", "sendPacket" };
-			for (String name : names) {
-				try {
-					return clazz.getMethod(name, packetClass);
-				} catch (NoSuchMethodException ignored) {
-				}
-			}
-
-			// 2. Diagnostic Fallback: Search by parameter type (Packet)
-			// This is cached, so it only runs once per connection class type.
-			for (java.lang.reflect.Method m : clazz.getMethods()) {
-				if (m.getParameterCount() == 1 && m.getParameterTypes()[0].equals(packetClass)) {
-					// Ignore generic Object methods like equals()
-					if (m.getName().equals("equals"))
-						continue;
-
-					return m;
-				}
-			}
-
+		if (connectionClass == null) {
 			return null;
-		});
+		}
+
+		return sendPacketMethodCache.computeIfAbsent(connectionClass, this::resolveSendPacketMethod).orElse(null);
+	}
+
+	private Optional<java.lang.reflect.Method> resolveSendPacketMethod(final Class<?> connectionClass) {
+		Class<?> packetClass = getPacket();
+		if (packetClass == null) {
+			return Optional.empty();
+		}
+
+		// 1. Try known names (send = 1.21.11+, a = 1.18-1.21, sendPacket = legacy)
+		String[] names = { "send", "a", "sendPacket" };
+		for (String name : names) {
+			try {
+				return Optional.of(connectionClass.getMethod(name, packetClass));
+			} catch (NoSuchMethodException ignored) {
+			}
+		}
+
+		// 2. Diagnostic Fallback: Search by parameter type (Packet)
+		// This is cached, so it only runs once per connection class type.
+		for (java.lang.reflect.Method method : connectionClass.getMethods()) {
+			if (method.getParameterCount() == 1 && method.getParameterTypes()[0].equals(packetClass)) {
+				if (!method.getName().equals("equals")) {
+					return Optional.of(method);
+				}
+			}
+		}
+
+		return Optional.empty();
 	}
 }

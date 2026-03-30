@@ -176,7 +176,7 @@ public class PacketWrapper {
 			return (ItemStack) value;
 		}
 		final Class<?> nmsItemStackClass = HamsterAPI.getInstance().getReflection().getItemStack();
-		if (nmsItemStackClass.isInstance(value)) {
+		if (nmsItemStackClass != null && nmsItemStackClass.isInstance(value)) {
 			ItemStack bukkitStack = NMSItemStackConverter.convertToBukkit(value);
 			valueCache.put(key, bukkitStack);
 			return bukkitStack;
@@ -281,7 +281,7 @@ public class PacketWrapper {
 			try {
 				Object value = field.get(this.packet);
 				if (value instanceof ItemStack) results.put(field.getName(), (ItemStack) value);
-				else if (nmsItemStackClass.isInstance(value)) results.put(field.getName(), NMSItemStackConverter.convertToBukkit(value));
+				else if (nmsItemStackClass != null && nmsItemStackClass.isInstance(value)) results.put(field.getName(), NMSItemStackConverter.convertToBukkit(value));
 			} catch (IllegalAccessException ignored) {}
 		}
 		return this.itemsCache = results;

@@ -23,7 +23,7 @@ public class BungeeMessenger {
 			out.writeUTF(subChannel);
 
 			for (final String arg : args) {
-				out.writeUTF(arg);
+				out.writeUTF(arg == null ? "" : arg);
 			}
 
 			messenger.sendPluginMessage((Plugin) instance, "BungeeCord", out.toByteArray());
