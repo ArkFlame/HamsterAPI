@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/2LStudios-MC/HamsterAPI/main/docs/logotype.png?token=AKWYIEDLKVRIXUHSMPW4AOS7R6OIO" align="center">
+<img src="./docs/logotype.png" align="center">
 
 <h2 align="center">What is HamsterAPI?</h2>
 <p align="center">HamsterAPI is a small library for listening to incoming and outgoing packets, reading, modifying and canceling them. It also allows you to easily send packages to users without the need to use Reflection or NMS in your plugin.</p>
